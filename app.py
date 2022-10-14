@@ -1,10 +1,20 @@
-from flask import Flask, render_template
+from flask import Flask, render_template, request, redirect
 from flask_sqlalchemy import SQLAlchemy
+import os
 from datetime import datetime
 
 app = Flask(__name__)
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///blog.db'
+basedir = os.path.abspath(os.path.dirname(__file__))
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + os.path.join(basedir, 'blog.db')
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+app.config['SECRET_KEY'] = 'hard to guess'
 db = SQLAlchemy(app)
+
+
+def create_app():
+    app = Flask(__name__)
+    db.init_app(app)
+    return app
 
 
 class Article(db.Model):
@@ -29,19 +39,68 @@ def about():
     return render_template('about.html')
 
 
-@app.route('/info')
-def info():
-    return 'Read me'
+@app.route('/posts')
+def posts():
+    articles = Article.query.order_by(Article.date.desc()).all()
+    return render_template('posts.html', articles=articles)
 
 
-@app.route('/catalog')
-def catalog():
-    return 'Сhoose a product'
+@app.route('/posts/<int:id>')
+def posts_detail(id):
+    article = Article.query.get(id)
+    return render_template('post_detail.html', article=article)
 
 
-@app.route('/user/<string:name>/<int:id>')
-def user(name, id):
-    return 'User page: ' + name + '-' + str(id)
+@app.route('/posts/<int:id>/delete')
+def posts_delete(id):
+    article = Article.query.get_or_404(id)
+
+    try:
+        db.session.delete(article)
+        db.session.commit()
+        return redirect('/posts')
+    except:
+        return 'При удалении статьи произошла ошибка'
+
+
+@app.route('/posts/<int:id>/update', methods=['POST', 'GET'])
+def post_update(id):
+    article = Article.query.get(id)
+
+    if request.method == "POST":
+        article.title = request.form['title']
+        article.intro = request.form['intro']
+        article.text = request.form['text']
+
+        try:
+            db.session.add(article)
+            db.session.commit()
+            return redirect('/posts')
+
+        except:
+            return 'При редактировании статьи произошла ошибка'
+    else:
+        article = Article.query.get(id)
+        return render_template('post_update.html', article=article)
+
+
+@app.route('/create-article', methods=['POST', 'GET'])
+def create_article():
+    if request.method == "POST":
+        title = request.form['title']
+        intro = request.form['intro']
+        text = request.form['text']
+
+        article = Article(title=title, intro=intro, text=text)
+        try:
+            db.session.add(article)
+            db.session.commit()
+            return redirect('/posts')
+
+        except:
+            return 'При добавлении статьи произошла ошибка'
+    else:
+        return render_template('create-article.html')
 
 
 if __name__ == '__main__':
