@@ -1,0 +1,17 @@
+section, .padding_menu {
+    padding-top: 60px;
+}
+.nav_padding {
+   margin-right: 20px;
+}
+.search_bg {
+    background-image: url("../img/bg-search.png");
+    background-size: cover;
+    height: 236px;
+    min-height: 236px;
+    align-items: center;
+}
+.form_search{
+    max-width: 600px;
+    margin: 0 auto;
+}

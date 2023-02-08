@@ -24,9 +24,19 @@ def index():
     return render_template('index.html')
 
 
+@app.route('/blog')
+def blog():
+    return render_template('blog.html')
+
+
 @app.route('/about')
 def about():
     return render_template('about.html')
+
+
+@app.route('/favorites')
+def favorites():
+    return render_template('favorites_posts.html')
 
 
 @app.route('/info')
@@ -42,6 +52,7 @@ def catalog():
 @app.route('/user/<string:name>/<int:id>')
 def user(name, id):
     return 'User page: ' + name + '-' + str(id)
+
 
 with app.app_context():
     db.create_all()
