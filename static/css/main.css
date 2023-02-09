@@ -15,3 +15,7 @@ section, .padding_menu {
     max-width: 600px;
     margin: 0 auto;
 }
+.form_reg {
+    justify-content: center;
+}
+
