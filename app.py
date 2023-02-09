@@ -1,12 +1,23 @@
-from flask import Flask, render_template, send_from_directory
+from flask import Flask, render_template, redirect, request, send_from_directory, flash
 from flask_sqlalchemy import SQLAlchemy
 from datetime import datetime
+from werkzeug.security import generate_password_hash, check_password_hash
+import os
 
 app = Flask(__name__)
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///blog.db'
+basedir = os.path.abspath(os.path.dirname(__file__))
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + os.path.join(basedir, 'blog.db')
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+app.config['SECRET_KEY'] = 'hard to guess'
 db = SQLAlchemy(app)
 UPLOAD_FOLDER = 'uploads'
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+
+
+def create_app():
+    app = Flask(__name__)
+    db.init_app(app)
+    return app
 
 
 class Category(db.Model):
@@ -34,7 +45,7 @@ class Article(db.Model):
     cover = db.Column(db.String(50), nullable=False, default='default.png')
     category_id = db.Column(db.Integer, db.ForeignKey('category.id'), nullable=False)
     category = db.relationship('Category', backref=db.backref('articles', lazy=True))
-    hashtag = db.relationship('Hashtag', backref=db.backref('articles', lazy=True))
+    hashtag_id = db.Column(db.Integer, db.ForeignKey('hashtag.id'), nullable=False)
 
     def __repr__(self):
         return '<Article %r>' % self.id
@@ -84,7 +95,29 @@ def register():
 
 @app.route('/register', methods=['POST'])
 def register_post():
-    return render_template('register.html')
+    username = request.form.get('username')
+    email = request.form.get('email')
+    password = request.form.get('password')
+    password1 = request.form.get('password1')
+    avatar = request.form.get('inputGroupFile04')
+
+    user = User.query.filter_by(email=email).first()
+
+    if user:
+        flash('Email address already exists')
+        return redirect('/login')
+
+    if password == password1:
+        new_user = User(email=email, username=username, avatar=avatar,
+                        password=generate_password_hash(password, method='sha256'))
+    else:
+        print('password not true')
+        return redirect('/register')
+
+    db.session.add(new_user)
+    db.session.commit()
+
+    return redirect('/login')
 
 
 @app.route('/login')
